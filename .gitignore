@@ -1,0 +1,46 @@
+# --- Build Artifacts ---
+Debug/
+Release/
+bin/
+obj/
+build/
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.su
+*.lst
+
+# --- STM32CubeIDE / Eclipse Specific ---
+.metadata/
+.settings/
+*.launch
+# Depending on your team, you may want to keep .project and .cproject 
+# but ignore the local build configurations if they vary.
+# .cproject
+# .project
+
+# --- STM32CubeMX Specific ---
+# Keep the .ioc file as it is the project source!
+# Ignore the backup folder created during code generation
+Backup/
+
+# --- Keil MDK Specific ---
+*.uvguix.*
+*.uvgui.*
+*.bak
+*.dep
+*.uvoptx
+# Listings and Objects folders are Keil's default build output
+Listings/
+Objects/
+
+# --- VS Code Specific ---
+.vscode/
+.history/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
