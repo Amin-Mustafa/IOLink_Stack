@@ -20,7 +20,7 @@
 #include <string.h>
 #include "cmsis_os2.h"
 #include "System/system.h"
-#include "jlink_rtt_log.h"
+#include "../../RTT/jlink_rtt_log.h"
 #include "../../LWIP/App/iolink_server.h"
 #include "lwip/sockets.h"
 
@@ -33,7 +33,7 @@ int main(void) {
     osKernelInitialize();
 
     JLINK_RTT_LogInit();
-    
+
     start_iolink_server();
 
     osKernelStart();

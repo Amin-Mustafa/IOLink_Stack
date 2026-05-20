@@ -1,6 +1,6 @@
 #include "osal_irq.h"
-#include "GPIO/gpio.h"
-#include "System/priorities.h"
+#include "../../Core/Src/GPIO/gpio.h"
+#include "../../Core/Src/System/priorities.h"
 #include <stddef.h>
 
 #define MAX14819_IRQ_PORT   GPIOA

@@ -35,7 +35,7 @@ BUILD_DIR = build
 # source
 ######################################
 # Core sources - auto-discover from Core/Src, excluding template files
-CORE_SOURCES = $(shell find Core/Src -name "*.c" -not -name "*_template.c")
+CORE_SOURCES = $(shell find Core/Src -name "*.c" -not -name "*_template.c") \
 
 # Driver sources - auto-discover from Drivers/STM32H5xx_HAL_Driver/Src, excluding template files
 DRIVER_SOURCES = $(shell find Drivers/STM32H5xx_HAL_Driver/Src -name "*.c" -not -name "*_template.c") \
@@ -57,12 +57,18 @@ LWIP_SOURCES = $(shell find Middlewares/Third_Party/LwIP/src/core -name "*.c") \
                LWIP/Target/ethernetif.c \
                Middlewares/Third_Party/LwIP/system/OS/sys_arch.c
 
+# i-link sources
+ILINK_SOURCES = $(shell find i-link/src -name "*.c") \
+				$(shell find i-link/iol_osal -name "*.c") 
+
+# RTT sources
+RTT_SOURCES = RTT/RTT/SEGGER_RTT.c RTT/RTT/SEGGER_RTT_printf.c RTT/Syscalls/SEGGER_RTT_Syscalls_GCC.c RTT/jlink_rtt_log.c
+
 # Combined C sources
-C_SOURCES = $(CORE_SOURCES) $(DRIVER_SOURCES) $(FREERTOS_SOURCES) $(LWIP_SOURCES)
+C_SOURCES = $(CORE_SOURCES) $(DRIVER_SOURCES) $(FREERTOS_SOURCES) $(LWIP_SOURCES) $(ILINK_SOURCES) $(RTT_SOURCES)
 
 # ASM sources
-ASM_SOURCES =  \
-startup_stm32h563xx.s
+ASM_SOURCES = startup_stm32h563xx.s 
 
 # ASMM sources
 ASMM_SOURCES = 
@@ -133,7 +139,7 @@ AS_INCLUDES =  \
 -IMiddlewares/Third_Party/LwIP/src/netif \
 -IMiddlewares/Third_Party/LwIP/system/arch \
 -ILWIP/App \
--ILWIP/Target \
+-ILWIP/Target 
 
 # C includes
 C_INCLUDES =  \
@@ -153,6 +159,13 @@ C_INCLUDES =  \
 -IMiddlewares/Third_Party/LwIP/system/arch \
 -ILWIP/App \
 -ILWIP/Target \
+-Ii-link/include \
+-Ii-link/include/sys \
+-Ii-link/iol_osal \
+-Ii-link/src \
+-IRTT/ \
+-IRTT/Config \
+-IRTT/RTT
 
 
 # compile gcc flags

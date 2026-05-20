@@ -541,7 +541,7 @@ static_assert (
          sizeof (iolink_port_types_t) * IOLINK_NUM_PORTS,
    "");
 
-static_assert (sizeof (arg_block_pdin_head_t) == 4, "");
+static_assert (sizeof(arg_block_pdin_head_t) == 4, "");
 static_assert (
    sizeof (arg_block_pdin_t) ==
       sizeof (arg_block_pdin_head_t) + IOLINK_PD_MAX_SIZE,

@@ -1,6 +1,6 @@
 #include "osal_spi.h"
-#include "SPI/spi.h"
-#include "GPIO/gpio.h"
+#include "../../Core/Src/SPI/spi.h"
+#include "../../Core/Src/GPIO/gpio.h"
 #include "stm32h563xx.h"
 
 #define MAX14819_CS_PORT    GPIOA
@@ -14,11 +14,11 @@ void * _iolink_pl_hw_spi_init (const char * spi_slave_name) {
 }
 
 void _iolink_pl_hw_spi_transfer (void* fd, void* data_read, const void* data_written, size_t n_bytes_to_transfer) {
-    SPI_Select(MAX14819_CS_PORT, MAX14819_CS_PIN);
+    HAL_GPIO_WritePin(MAX14819_CS_PORT, MAX14819_CS_PIN, GPIO_PIN_RESET);
 
     SPI_TransmitReceive(data_written, data_read, n_bytes_to_transfer);
 
-    SPI_Release(MAX14819_CS_PORT, MAX14819_CS_PIN);
+    HAL_GPIO_WritePin(MAX14819_CS_PORT, MAX14819_CS_PIN, GPIO_PIN_SET);
 }
 
 void _iolink_pl_hw_spi_close (void * fd) {

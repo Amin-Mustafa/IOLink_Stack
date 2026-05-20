@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "cmsis_os2.h"
+#include "FreeRTOS.h"
 #include "../../Core/Src/System/system.h"
 
 /* Priority of timer callback thread (if USE_SCHED_FIFO is set) */
@@ -47,12 +48,12 @@ static osMemoryPoolId_t timer_pool;
 
 void * os_malloc (size_t size)
 {
-    return malloc(size);
+    return pvPortMalloc(size);
 }
 
 void os_free (void * ptr)
 {
-    free(ptr);
+    vPortFree(ptr);
 }
 
 os_mutex_t * os_mutex_create (void)
@@ -252,7 +253,7 @@ os_timer_t * os_timer_create (
     }
     os_timer_t* timer = (os_timer_t *)osMemoryPoolAlloc(timer_pool, 0U);
 
-    if(timer = NULL) return NULL;
+    if(!timer) return NULL;
 
     timer->fn   = fn;
     timer->arg  = arg;

@@ -906,17 +906,22 @@ static const iolink_hw_ops_t iolink_hw_ops = {
    .pl_handler          = iolink_pl_max14819_pl_handler,
 };
 
+static iolink_14819_drv_t max14819_instance;
+static bool instance_allocated = false;
+
 iolink_hw_drv_t * iolink_14819_init (const iolink_14819_cfg_t * cfg)
 {
-   iolink_14819_drv_t * iolink;
+   iolink_14819_drv_t * iolink = &max14819_instance;
    uint8_t ch;
    uint8_t rev;
-   /* Allocate driver structure */
-   iolink = calloc (1, sizeof (iolink_14819_drv_t));
-   if (iolink == NULL)
-   {
-      return NULL;
+
+   if(instance_allocated) {
+        LOG_ERROR (IOLINK_PL_LOG, "PL: Driver already initialized.\n");
+        return NULL;
    }
+
+   memset(iolink, 0, sizeof(iolink_14819_drv_t));
+   instance_allocated = true;
 
    /* Initialise driver structure */
    iolink->drv.ops      = &iolink_hw_ops;
@@ -930,7 +935,7 @@ iolink_hw_drv_t * iolink_14819_init (const iolink_14819_cfg_t * cfg)
    if (iolink->fd_spi == NULL)
    {
       LOG_ERROR (IOLINK_PL_LOG, "PL: Unable to open spi device: %s\n", cfg->spi_slave_name);
-      free (iolink);
+      instance_allocated = false;
       return NULL;
    }
 
@@ -938,12 +943,14 @@ iolink_hw_drv_t * iolink_14819_init (const iolink_14819_cfg_t * cfg)
    {
       LOG_ERROR (IOLINK_APP_LOG, "PL: Failed to setup interrupt %u\n", cfg->chip_irq);
       _iolink_pl_hw_spi_close(iolink->fd_spi);
-      free (iolink);
+      instance_allocated = false;
       return NULL;
    }
 
    iolink->exclusive = os_mutex_create();
    iolink->drv.mtx = iolink->exclusive;
+
+   osDelay(10);
 
    /* Verify chip is supported */
    rev = iolink_14819_read_register (iolink, REG_RevID);
@@ -953,7 +960,7 @@ iolink_hw_drv_t * iolink_14819_init (const iolink_14819_cfg_t * cfg)
       LOG_ERROR (IOLINK_PL_LOG, "PL: Unsupported chip revision: 0x%02x\n", rev);
       os_mutex_destroy(iolink->exclusive);
       _iolink_pl_hw_spi_close(iolink->fd_spi);
-      free (iolink);
+      instance_allocated = false;
       return NULL;
    }
 

@@ -3,6 +3,6 @@
 
 osMutexId_t rtt_log_mutex = NULL;
 
-void osal_log_init(void) {
+void JLINK_RTT_LogInit(void) {
     rtt_log_mutex = osMutexNew(NULL);
 }

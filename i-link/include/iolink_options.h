@@ -16,10 +16,7 @@
 #ifndef OPTIONS_H
 #define OPTIONS_H
 
-/* #undef WITH_MALLOC */
-
-#cmakedefine LOG_ENABLE
-#cmakedefine WITH_MALLOC
+#undef WITH_MALLOC 
 
 /*
  * Supported IO-Link HW
@@ -28,7 +25,7 @@
 #define IOLINK_HW_MAX14819 1
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL               (LOG_LEVEL_@LOG_LEVEL@)
+#define LOG_LEVEL               (LOG_LEVEL_DEBUG) 
 #endif
 
 #ifndef IOLINK_PL_LOG

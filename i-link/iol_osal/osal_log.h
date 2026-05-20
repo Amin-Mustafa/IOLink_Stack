@@ -22,11 +22,12 @@ extern "C" {
 
 #include "osal.h"
 
-
+#ifndef LOG_LEVEL
 #ifdef PINEDEBUG
 #define LOG_LEVEL          (LOG_LEVEL_DEBUG)
 #else
 #define LOG_LEVEL          (LOG_LEVEL_INFO)
+#endif
 #endif
 
 /* Log levels */

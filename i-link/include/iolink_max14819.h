@@ -17,6 +17,7 @@
 #define IOLINK_MAX14819_H
 
 #include <stdint.h>
+#include "iolink_pl_hw_drv.h"
 
 #ifdef __cplusplus
 extern "C" {

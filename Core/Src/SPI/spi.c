@@ -168,7 +168,7 @@ void SPI_Release(GPIO_TypeDef* port, uint16_t pin) {
 }
 
 
-uint8_t SPI_Transmit(void* data, uint16_t len) {
+uint8_t SPI_Transmit(const void* data, uint16_t len) {
     if (osKernelGetState() != osKernelRunning) {
         uint8_t status = (HAL_SPI_Transmit(&ctx.hspi, (uint8_t*)data, len, HARD_TIMEOUT) == HAL_OK);
         return status;
@@ -231,7 +231,7 @@ uint16_t SPI_Receive(void* data, uint16_t len) {
     return bytes_received;
 }
 
-uint16_t SPI_TransmitReceive(void* tx_data, void* rx_data, uint16_t len) {
+uint16_t SPI_TransmitReceive(const void* tx_data, void* rx_data, uint16_t len) {
     if (osKernelGetState() != osKernelRunning) {
         HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(&ctx.hspi, (uint8_t*)tx_data, (uint8_t*)rx_data, len, HARD_TIMEOUT);
         return (status == HAL_OK) ? len : 0;
