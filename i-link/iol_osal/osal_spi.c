@@ -9,6 +9,8 @@
 void * _iolink_pl_hw_spi_init (const char * spi_slave_name) {
     GPIO_InitPin(MAX14819_CS_PORT, MAX14819_CS_PIN, GPIO_MODE_OUTPUT_PP, GPIO_SPEED_FREQ_VERY_HIGH, GPIO_NOPULL);
     SPI_Init(SPI_MODE_MASTER, SPI_DATASIZE_8BIT, SPI_BAUDRATEPRESCALER_32, SPI_DMA_NONE);
+
+    return (void*)SPI_GetHandle();
 }
 
 void _iolink_pl_hw_spi_transfer (void* fd, void* data_read, const void* data_written, size_t n_bytes_to_transfer) {

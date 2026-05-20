@@ -17,12 +17,14 @@ int _iolink_setup_int (int gpio_pin, isr_func_t isr_func, void * arg) {
 
     HAL_NVIC_SetPriority(EXTI3_IRQn, MAX14819_IRQ_PRIORITY, 0); 
     HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+    return 0;
 }
 
 void EXTI3_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(MAX14819_IRQ_PIN);
     
     if (max14819_isr != NULL) {
-        rtlabs_max14819_isr(max14819_isr_arg);
+        max14819_isr(max14819_isr_arg);
     }
 }

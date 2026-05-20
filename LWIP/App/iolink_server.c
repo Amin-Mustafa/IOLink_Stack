@@ -1,7 +1,6 @@
 #include "lwip.h"
 #include "lwip/sockets.h"
 #include "iolink_server.h"
-#include "../../Core/Src/O1D100/o1d100.h"
 #include "cmsis_os2.h"
 #include <string.h>
 
