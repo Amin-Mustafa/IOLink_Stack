@@ -1,6 +1,8 @@
 #include "system.h"
 #include "stm32h5xx_hal.h"
 
+#define DWT_LAR (*(volatile uint32_t *)(DWT_BASE + 0xFB0))
+
 void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -99,4 +101,22 @@ __attribute__((weak)) void Error_Handler(void) {
     while (1)
     {
     }
+}
+
+void DWT_Init(void) {
+    // Enable access to the DWT via DEMCR register
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+
+    // Unlock DWT 
+    DWT_LAR = 0xC5ACCE55; 
+
+    DWT->CYCCNT = 0;
+
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+void DWT_Delay_us(uint32_t us) {
+    uint32_t start_tick = DWT->CYCCNT;
+    uint32_t delay_ticks = us * (SystemCoreClock / 1000000);
+    while ((DWT->CYCCNT - start_tick) < delay_ticks);
 }

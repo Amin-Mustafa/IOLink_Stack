@@ -12,9 +12,12 @@ typedef enum {
 
 void SPI_Init(uint32_t mode, uint32_t data_size, uint32_t baudrate_psc, SPI_DMA_t dma_line);
 
-uint8_t SPI_Transmit(GPIO_TypeDef* cs_port, uint16_t cs_pin, void* data, uint16_t len);
-uint16_t SPI_Receive(GPIO_TypeDef* cs_port, uint16_t cs_pin, void* data, uint16_t len);
-uint16_t SPI_TransmitReceive(GPIO_TypeDef* cs_port, uint16_t cs_pin, void* tx_data, void* rx_data, uint16_t len);
+uint8_t SPI_Transmit(void* data, uint16_t len);
+uint16_t SPI_Receive(void* data, uint16_t len);
+uint16_t SPI_TransmitReceive(void* tx_data, void* rx_data, uint16_t len);
+
+void SPI_Select(GPIO_TypeDef* port, uint16_t pin);
+void SPI_Release(GPIO_TypeDef* port, uint16_t pin);
 
 SPI_HandleTypeDef* SPI_GetHandle();
 
