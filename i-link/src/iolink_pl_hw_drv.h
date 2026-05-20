@@ -21,6 +21,7 @@
 #endif
 #include "iolink_types.h"
 #include "iolink.h"
+#include "osal.h"
 
 #ifdef __cplusplus
 extern "C" {

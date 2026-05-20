@@ -24,28 +24,7 @@ extern "C" {
 #include "cmsis_os2.h"
 #include <time.h>
 
-// #define OS_THREAD
-// #define OS_MUTEX
-// #define OS_SEM
-// #define OS_EVENT
-// #define OS_MBOX
 #define OS_TIMER
-
-// typedef void os_thread_t;
-// typedef void os_mutex_t;
-// typedef void os_sem_t; 
-// typedef void os_event_t;
-
-// typedef struct os_mbox
-// {
-//    osEventFlagsId_t cond;
-//    osMutexId_t mutex;
-//    size_t r;
-//    size_t w;
-//    size_t count;
-//    size_t size;
-//    void * msg[];
-// } os_mbox_t;
 
 typedef struct os_timer
 {

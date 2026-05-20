@@ -472,6 +472,9 @@ iolink_sm_port_t * iolink_get_sm_ctx (iolink_port_t * port)
    return &port->sm;
 }
 
+__attribute__((aligned(8)))
+static uint8_t master_mem[sizeof(iolink_m_t) + (sizeof(iolink_port_t) * IOLINK_NUM_PORTS)];
+
 /* Public APIs */
 iolink_m_t * iolink_m_init (const iolink_m_cfg_t * m_cfg)
 {
@@ -488,12 +491,8 @@ iolink_m_t * iolink_m_init (const iolink_m_cfg_t * m_cfg)
       return NULL;
    }
 
-   iolink_m_t * master =
-      calloc (1, sizeof (iolink_m_t) + sizeof (iolink_port_t) * m_cfg->port_cnt);
-   if (master == NULL)
-   {
-      return NULL;
-   }
+   iolink_m_t * master = (iolink_m_t *)master_mem;
+   memset(master, 0, sizeof(iolink_m_t) + (sizeof(iolink_port_t) * m_cfg->port_cnt));
 
    master->has_exited = false;
 
