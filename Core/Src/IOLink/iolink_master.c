@@ -17,12 +17,43 @@ static void Master_PD_Callback(uint8_t portnumber, void* arg, uint8_t data_len, 
     }
 }
 
-static void Master_SMI_Callback(void *arg, uint8_t portnumber, iolink_arg_block_id_t ref_id, uint16_t len, arg_block_t *block) {
-    if (portnumber >= 2) return;
-    const IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber];
-    if(sensor && sensor->smi_handler) {
-        sensor->smi_handler(sensor->sensor_ctx, ref_id, len, block);
+static void Master_SMI_Callback(void *arg, uint8_t portnumber, iolink_arg_block_id_t ref_id, uint16_t len, arg_block_t *block)  {
+    if(portnumber >= 2) return;
+
+    IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber];
+    if(!sensor) return;
+
+    if (ref_id == IOLINK_ARG_BLOCK_ID_OD_RD) {
+        // On-demand data
+        arg_block_od_t* od_data = (arg_block_od_t*)block;
+        if(od_data->index == sensor->pending_index) {
+            int payload = len - sizeof(arg_block_od_t);
+            if((payload > 0) && (payload <= sensor->isdu_rx_len) && (sensor->isdu_rx_buffer != NULL)) {
+                memcpy(sensor->isdu_rx_buffer, od_data->data, payload);
+                sensor->isdu_rx_len = payload; // Update with actual length received
+                sensor->isdu_success = true;
+            } else {
+                sensor->isdu_success = false;
+            }
+        }
     }
+    // Handle Write Confirmations
+    else if (ref_id == IOLINK_ARG_BLOCK_ID_OD_WR) 
+    {
+        // The stack echoes back an OD_WR block on success
+        arg_block_od_t *od_data = (arg_block_od_t *)block;
+        if (od_data->index == sensor->pending_index) 
+        {
+            sensor->isdu_success = true;
+        }
+    }
+    // Handle Explicit Failures
+    else if (ref_id == IOLINK_ARG_BLOCK_ID_JOB_ERROR) 
+    {
+        sensor->isdu_success = false;
+    }
+
+    osSemaphoreRelease(sensor->isdu_sem);
 }
 
 bool IOLink_Master_Init(const IOLink_Master_Cfg_t* cfg) {
@@ -78,4 +109,66 @@ void IOLink_Master_WakePort(uint8_t port) {
 
     // Send request
     SMI_PortConfiguration_req(port, IOLINK_ARG_BLOCK_ID_PORT_CFG_LIST, sizeof(req), (arg_block_t *)&req);
+}
+
+bool IOLink_Master_ReadISDU(uint8_t port, uint16_t index, uint8_t subindex, uint8_t *buffer, uint16_t *len, uint32_t timeout_ms) {
+    IOLink_Sensor_Driver_t* sensor = attached_sensors[port];
+    if (!sensor || !buffer || !len) return false;
+
+    osMutexAcquire(sensor->isdu_mutex, osWaitForever);
+
+    // Setup transaction state
+    sensor->pending_index = index;
+    sensor->isdu_rx_buffer = buffer;
+    sensor->isdu_rx_len = *len;
+    sensor->isdu_success = false;
+
+    // Dispatch request
+    arg_block_od_t read_req; 
+    read_req.arg_block.id = IOLINK_ARG_BLOCK_ID_OD_RD;
+    read_req.index = index;   
+    read_req.subindex = subindex; 
+    
+    SMI_DeviceRead_req(port, IOLINK_ARG_BLOCK_ID_OD_RD, sizeof(arg_block_od_t), (arg_block_t *)&read_req);
+
+    // Block until Master_SMI_Callback releases the semaphore or timeout
+    osStatus_t status = osSemaphoreAcquire(sensor->isdu_sem, timeout_ms);
+
+    sensor->isdu_rx_buffer = NULL;
+    *len = sensor->isdu_rx_len; // Pass received length back to the caller
+    
+    osMutexRelease(sensor->isdu_mutex);
+
+    return (status == osOK && sensor->isdu_success);
+}
+
+bool IOLink_Master_WriteISDU(uint8_t port, uint16_t index, uint8_t subindex, const uint8_t *data, uint16_t len, uint32_t timeout_ms) {
+    IOLink_Sensor_Driver_t* sensor = attached_sensors[port];
+    if (!sensor || !data || len == 0) return false;
+
+    osMutexAcquire(sensor->isdu_mutex, osWaitForever);
+
+    sensor->pending_index = index;
+    sensor->isdu_success = false;
+
+    // Allocate a temporary buffer large enough to hold the header + payload
+    uint8_t req_buffer[sizeof(arg_block_od_t) + len];
+    arg_block_od_t *write_req = (arg_block_od_t *)req_buffer;
+    
+    // Setup request
+    write_req->arg_block.id = IOLINK_ARG_BLOCK_ID_OD_WR;
+    write_req->index = index;   
+    write_req->subindex = subindex; 
+    // Copy user payload to tx data
+    memcpy(write_req->data, data, len);
+
+    // Dispatch write request
+    SMI_DeviceWrite_req(port, IOLINK_ARG_BLOCK_ID_OD_WR, sizeof(req_buffer), (arg_block_t *)write_req);
+
+    // Block until the SMI callback catches the confirmation or error
+    osStatus_t status = osSemaphoreAcquire(sensor->isdu_sem, timeout_ms);
+    
+    osMutexRelease(sensor->isdu_mutex);
+
+    return (status == osOK && sensor->isdu_success);
 }

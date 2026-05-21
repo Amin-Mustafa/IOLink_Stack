@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <stddef.h>
 #include "iolink_options.h"
 
 #ifdef __cplusplus
