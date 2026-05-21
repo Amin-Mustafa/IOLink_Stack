@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 typedef struct {
-    IOLink_Sensor_Driver_t drv_interface;
+    IOLink_Sensor_Driver_t sensor_drv;
 
     // Process data
     uint16_t distance_mm;

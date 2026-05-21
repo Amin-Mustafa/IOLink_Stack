@@ -58,9 +58,7 @@ static void Master_SMI_Callback(void *arg, uint8_t portnumber, iolink_arg_block_
 
 bool IOLink_Master_Init(const IOLink_Master_Cfg_t* cfg) {
     iolink_14819_cfg_t max_cfg = {0};
-    max_cfg.chip_address    = cfg->spi_addr;
     max_cfg.spi_slave_name  = cfg->spi_slave_name;
-    max_cfg.chip_irq        = cfg->chip_irq;
     max_cfg.DrvCurrLim      = cfg->current_limit;
     max_cfg.CQCfgA          = MAX14819_CQCFG_PUSHPUL;
     max_cfg.CQCfgB          = MAX14819_CQCFG_PUSHPUL;
