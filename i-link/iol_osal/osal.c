@@ -250,6 +250,7 @@ os_timer_t * os_timer_create (
 
     if(!initialized) {
         timer_pool = osMemoryPoolNew(10, sizeof(os_timer_t), NULL);
+        initialized = true;
     }
     os_timer_t* timer = (os_timer_t *)osMemoryPoolAlloc(timer_pool, 0U);
 

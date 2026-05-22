@@ -7,20 +7,17 @@ static iolink_m_t* master_stack = NULL;
 static iolink_hw_drv_t* phy_driver = NULL;
 static iolink_pl_mode_t port_modes[2] = {iolink_mode_INACTIVE, iolink_mode_INACTIVE};
 
-static IOLink_Sensor_Driver_t* attached_sensors[2] = {NULL, NULL};
+static IOLink_Sensor_Driver_t* attached_sensors[IOLINK_PORT_COUNT] = {NULL};
 
 static void Master_PD_Callback(uint8_t portnumber, void* arg, uint8_t data_len, const uint8_t* data) {
-    if (portnumber >= 2) return;
-    const IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber];
+    const IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber - 1];
     if(sensor && sensor->pd_handler) {
         sensor->pd_handler(sensor->sensor_ctx, data_len, data);
     }
 }
 
 static void Master_SMI_Callback(void *arg, uint8_t portnumber, iolink_arg_block_id_t ref_id, uint16_t len, arg_block_t *block)  {
-    if(portnumber >= 2) return;
-
-    IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber];
+    IOLink_Sensor_Driver_t* sensor = attached_sensors[portnumber - 1];
     if(!sensor) return;
 
     if (ref_id == IOLINK_ARG_BLOCK_ID_OD_RD) {
@@ -56,10 +53,12 @@ static void Master_SMI_Callback(void *arg, uint8_t portnumber, iolink_arg_block_
     osSemaphoreRelease(sensor->isdu_sem);
 }
 
+// API
+
 bool IOLink_Master_Init(const IOLink_Master_Cfg_t* cfg) {
     iolink_14819_cfg_t max_cfg = {0};
-    max_cfg.spi_slave_name  = cfg->spi_slave_name;
-    max_cfg.DrvCurrLim      = cfg->current_limit;
+    max_cfg.spi_slave_name  = (cfg == NULL) ? "Default" : cfg->spi_slave_name;
+    max_cfg.DrvCurrLim      = (cfg == NULL) ? MAX14819_CURRLIM_100mA : cfg->current_limit;
     max_cfg.CQCfgA          = MAX14819_CQCFG_PUSHPUL;
     max_cfg.CQCfgB          = MAX14819_CQCFG_PUSHPUL;
 
@@ -87,8 +86,8 @@ bool IOLink_Master_Init(const IOLink_Master_Cfg_t* cfg) {
     return (master_stack != NULL);
 }
 
-bool IOLink_Master_AttachSensor(uint8_t port, IOLink_Sensor_Driver_t* sensor_driver) {
-    if((port >= 2) || (sensor_driver == NULL)) {
+bool IOLink_Master_AttachSensor(IOLink_Port_t port, IOLink_Sensor_Driver_t* sensor_driver) { 
+    if((port >= IOLINK_PORT_COUNT) || (sensor_driver == NULL)) {
         return false;
     }
 
@@ -97,7 +96,8 @@ bool IOLink_Master_AttachSensor(uint8_t port, IOLink_Sensor_Driver_t* sensor_dri
     return true;
 }
 
-void IOLink_Master_WakePort(uint8_t port) {
+void IOLink_Master_WakePort(IOLink_Port_t port) {
+    if(port >= IOLINK_PORT_COUNT) return;
     // Set request for seding port configuration
     arg_block_portconfiglist_t req = {0};
     req.arg_block.id = IOLINK_ARG_BLOCK_ID_PORT_CFG_LIST;   
@@ -106,12 +106,14 @@ void IOLink_Master_WakePort(uint8_t port) {
     req.configlist.portmode = IOLINK_PORTMODE_IOL_AUTO; 
 
     // Send request
-    SMI_PortConfiguration_req(port, IOLINK_ARG_BLOCK_ID_PORT_CFG_LIST, sizeof(req), (arg_block_t *)&req);
+    SMI_PortConfiguration_req(port + 1, IOLINK_ARG_BLOCK_ID_PORT_CFG_LIST, sizeof(req), (arg_block_t *)&req);
 }
 
-bool IOLink_Master_ReadISDU(uint8_t port, uint16_t index, uint8_t subindex, uint8_t *buffer, uint16_t *len, uint32_t timeout_ms) {
+bool IOLink_Master_ReadISDU(IOLink_Port_t port, uint16_t index, uint8_t subindex, uint8_t *buffer, uint16_t *len, uint32_t timeout_ms) {
+    if (port >= IOLINK_PORT_COUNT || !buffer || !len) return false;
+
     IOLink_Sensor_Driver_t* sensor = attached_sensors[port];
-    if (!sensor || !buffer || !len) return false;
+    if (!sensor) return false;
 
     osMutexAcquire(sensor->isdu_mutex, osWaitForever);
 
@@ -127,7 +129,7 @@ bool IOLink_Master_ReadISDU(uint8_t port, uint16_t index, uint8_t subindex, uint
     read_req.index = index;   
     read_req.subindex = subindex; 
     
-    SMI_DeviceRead_req(port, IOLINK_ARG_BLOCK_ID_OD_RD, sizeof(arg_block_od_t), (arg_block_t *)&read_req);
+    SMI_DeviceRead_req(port + 1, IOLINK_ARG_BLOCK_ID_OD_RD, sizeof(arg_block_od_t), (arg_block_t *)&read_req);
 
     // Block until Master_SMI_Callback releases the semaphore or timeout
     osStatus_t status = osSemaphoreAcquire(sensor->isdu_sem, timeout_ms);
@@ -140,17 +142,19 @@ bool IOLink_Master_ReadISDU(uint8_t port, uint16_t index, uint8_t subindex, uint
     return (status == osOK && sensor->isdu_success);
 }
 
-bool IOLink_Master_WriteISDU(uint8_t port, uint16_t index, uint8_t subindex, const uint8_t *data, uint16_t len, uint32_t timeout_ms) {
+bool IOLink_Master_WriteISDU(IOLink_Port_t port, uint16_t index, uint8_t subindex, const uint8_t *data, uint16_t len, uint32_t timeout_ms) {
+    if (port >= IOLINK_PORT_COUNT || !data || !len) return false;
+    
     IOLink_Sensor_Driver_t* sensor = attached_sensors[port];
-    if (!sensor || !data || len == 0) return false;
+    if (!sensor) return false;
 
     osMutexAcquire(sensor->isdu_mutex, osWaitForever);
 
     sensor->pending_index = index;
     sensor->isdu_success = false;
 
-    // Allocate a temporary buffer large enough to hold the header + payload
-    uint8_t req_buffer[sizeof(arg_block_od_t) + len];
+    // Allocate a buffer large enough to hold the header + payload
+    uint8_t req_buffer[sizeof(arg_block_od_t) + IOLINK_OD_MAX_SIZE];
     arg_block_od_t *write_req = (arg_block_od_t *)req_buffer;
     
     // Setup request
@@ -161,7 +165,7 @@ bool IOLink_Master_WriteISDU(uint8_t port, uint16_t index, uint8_t subindex, con
     memcpy(write_req->data, data, len);
 
     // Dispatch write request
-    SMI_DeviceWrite_req(port, IOLINK_ARG_BLOCK_ID_OD_WR, sizeof(req_buffer), (arg_block_t *)write_req);
+    SMI_DeviceWrite_req(port + 1, IOLINK_ARG_BLOCK_ID_OD_WR, sizeof(req_buffer), (arg_block_t *)write_req);
 
     // Block until the SMI callback catches the confirmation or error
     osStatus_t status = osSemaphoreAcquire(sensor->isdu_sem, timeout_ms);

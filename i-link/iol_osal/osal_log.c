@@ -14,7 +14,7 @@ void os_log (uint8_t type, const char * fmt, ...) {
 
     switch(LOG_LEVEL_GET(type)) {
         case LOG_LEVEL_DEBUG:
-            SEGGER_RTT_printf(term_id, "[%6u DEBUG] ", sec, ms);
+            SEGGER_RTT_printf(term_id, "[%3u.%03u DEBUG] ", sec, ms);
             break;
         case LOG_LEVEL_INFO:
             SEGGER_RTT_printf(term_id, "[%3u.%03u INFO ] ", sec, ms);

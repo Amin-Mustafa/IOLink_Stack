@@ -12,6 +12,12 @@ typedef enum {
     MAX14819_CURRLIM_500mA = 0x03,
 } MAX14819_CurrLim_t;
 
+typedef enum {
+    IOLINK_PORT_A       = 0,
+    IOLINK_PORT_B       = 1,
+    IOLINK_PORT_COUNT   = 2,
+} IOLink_Port_t;
+
 typedef struct {
     const char* spi_slave_name;
     uint8_t current_limit;      // Maps to MAX14819 REG_DrvrCurrLim
@@ -21,9 +27,9 @@ typedef struct {
 } IOLink_Master_Cfg_t;
 
 bool IOLink_Master_Init(const IOLink_Master_Cfg_t* cfg);
-bool IOLink_Master_AttachSensor(uint8_t port, IOLink_Sensor_Driver_t* sensor_driver);
-void IOLink_Master_WakePort(uint8_t port);
-bool IOLink_Master_ReadISDU(uint8_t port, uint16_t index, uint8_t subindex, uint8_t *buffer, uint16_t *len, uint32_t timeout_ms);
-bool IOLink_Master_WriteISDU(uint8_t port, uint16_t index, uint8_t subindex, const uint8_t *data, uint16_t len, uint32_t timeout_ms);
+bool IOLink_Master_AttachSensor(IOLink_Port_t port, IOLink_Sensor_Driver_t* sensor_driver);
+void IOLink_Master_WakePort(IOLink_Port_t port);
+bool IOLink_Master_ReadISDU(IOLink_Port_t port, uint16_t index, uint8_t subindex, uint8_t *buffer, uint16_t *len, uint32_t timeout_ms);
+bool IOLink_Master_WriteISDU(IOLink_Port_t port, uint16_t index, uint8_t subindex, const uint8_t *data, uint16_t len, uint32_t timeout_ms);
 
 #endif  // IOLINK_MASTER_H

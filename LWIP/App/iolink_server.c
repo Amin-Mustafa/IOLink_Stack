@@ -16,6 +16,8 @@ const osThreadAttr_t iolink_server_attr = {
 
 #define ETH_DBG 1
 
+#define LASER_PORT IOLINK_PORT_A
+
 enum Dbg {
     NOTHING, 
     TASK_STARTED,
@@ -45,8 +47,8 @@ void iolink_server_task(void* args) {
     };
 
     IOLink_Master_Init(&cfg);
-    IOLink_Master_AttachSensor(0, &laser.sensor_drv);
-    IOLink_Master_WakePort(0);
+    IOLink_Master_AttachSensor(LASER_PORT, &laser.sensor_drv);
+    IOLink_Master_WakePort(LASER_PORT);
 
     osDelay(2000);
 
